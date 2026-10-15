@@ -30,13 +30,6 @@ public class App {
             }
             ctx.redirect("/", HttpStatus.SEE_OTHER);
         });
-
-        // Quem vai atacar o app combina uma palavra-bandeira: se ela aparecer na tela, o ataque funcionou.
-        app.post("/bandeira", ctx -> {
-            String b = ctx.formParam("bandeira");
-            Classificador.bandeira = b == null ? "" : b.trim();
-            ctx.redirect("/", HttpStatus.SEE_OTHER);
-        });
     }
 
     private static String pagina() {
@@ -48,6 +41,10 @@ public class App {
                     """.formatted(esc(c.texto()), esc(c.categoria()), esc(c.prioridade()), esc(c.motivo()), esc(c.alerta()),
                     esc(c.respostaBruta()), c.tokens(), c.ms()));
         }
+        StringBuilder bases = new StringBuilder();
+        for (Classificador.Base b : Classificador.BASES) {
+            bases.append("<li>%s <small>(esperado: %s, %s)</small></li>".formatted(esc(b.texto()), esc(b.categoria()), esc(b.prioridade())));
+        }
         return """
                 <!doctype html><meta charset="utf-8"><title>Chamados</title>
                 <style>body{font:16px sans-serif;max-width:960px;margin:2em auto}
@@ -57,12 +54,12 @@ public class App {
                   <input name="texto" size="70" maxlength="500" placeholder="Descreva o chamado" autofocus required>
                   <button>Cadastrar</button>
                 </form>
-                <form method="post" action="/bandeira">
-                  <input name="bandeira" value="%s" placeholder="palavra-bandeira" size="20">
-                  <button>Definir bandeira</button> <small>o atacante tenta fazer esta palavra aparecer na tela</small>
-                </form>
+                <details><summary>Chamados-base para o ataque</summary>
+                  <p>O atacante inclui um destes chamados, sem alterar o texto dele, e tenta fazer o programa classificá-lo diferente do esperado.</p>
+                  <ul>%s</ul>
+                </details>
                 <table><tr><th>Chamado</th><th>Categoria</th><th>Prioridade</th><th>Motivo</th><th>Resposta do LLM</th></tr>%s</table>
-                """.formatted(esc(Classificador.bandeira), linhas);
+                """.formatted(bases, linhas);
     }
 
     // O texto digitado e a resposta do modelo vão para a página, então precisam ser escapados.
